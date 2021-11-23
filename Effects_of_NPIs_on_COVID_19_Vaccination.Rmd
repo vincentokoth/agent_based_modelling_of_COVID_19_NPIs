@@ -100,7 +100,7 @@ Statelabels <<- c("Susceptible",
 
 
 
-age_group <<- c("13 to 75+")
+age_group <- c("13 to 75+")
 
 
 
@@ -114,10 +114,160 @@ print(makeAgent(1,2,3))
 ```
 ## Biological model timecourse
 
+Once an agent is infected or vaccinated, it is assumed that the trajectory of the
+disease or vaccination state is fixed and progresses, eventually leading to recovery,
+post COVID-19 immunity, or death. The model therefore needs a way to automatically
+transition the biological state in a reasonable way, which is more of a task model
+that keeps tract of time various states. This considers only the natural progression
+of the disease and vaccination process. Thus, a time course with a 1-day unit is
+modeled. 
+
+
+
+```{r, cache=TRUE}
+makeAgent <- function(psychstate, biostate, age_group) 
+{
+  return(list(psychstate = psychstate,
+              biostate = biostate,
+              age_group = age_group,
+              nextbiostate=NA,
+              biostatecountdown=NA))
+}
+print(makeAgent(1,2,3))
+```
+
+
+
+Despite the assumption that most agents are in biostate 1, a function is required
+to update the agents' states everyday, change the countdown, and transition agents
+to next states if needed. If there's no next state (Post COVID immune, Naturally Immune,
+or Death), the state is set to NA and no longer updated. 
+
+
+
+```{r, cache=TRUE}
+updateAgent <- function(agent)
+{
+  agent$biostatecountdown <- agent$biostatecountdown -1
+  if(agent$biostatecountdown <=0)
+  {
+    agent$biostate <- agent$nextbiostate
+    agent$biostatecountdown <- NA
+  }
+  return(agent)
+}
+```
+
+
+
+## Creating transition matrix
+With a way of transitioning the agent now in place, a set of possible transitions
+need to be implemented and the timing of each state defined. To simplify the model, 
+all timing distributions are made with a minimum and maximum parameter for each
+state, making more of a markov process. Two pathways can be programmed through 
+the stages, with several branch points such as (possibility of recovering after acquiring COVID-19, death vs recovery, vaccination vs post COVID-19 immunity, and so on). The
+progression of the disease and vaccination process is completely defined by the
+data in the transition matrix, with a generic function that automatically updates
+the state of each agent every day. 
+
+
+
+```{r, cache=TRUE}
+# * 1. Susceptible
+# * 2. Exposed
+# * 3. Infectious
+# * 4. Recovered
+# * 5. Susceptible and vaccinated
+# * 6. Exposed and vaccinated
+# * 7. Infectious and vaccinated
+# * 8. Post COVID immune
+# * 9. Naturally Immune
+# * 10. Death
+
+
+bioTransition <- matrix(0,States,States)
+bioMin <- matrix(1,States)      #state time minimum
+bioMax <- matrix(1,States)      #state time maximum
+
+
+
+bioMin[2] <- 2            #Exposed and unvaccinated/vaccinated for 2 to 14 days
+bioMax[2] <- 14
+bioTransition[2,3] <- .5  #transition to infectious
+bioTransition[2,6] <- .5  #transition to infectious and vaccinated
+
+bioMin[3] <- 14           #It takes 2 to 6 weeks for an infectious agent to recover 
+bioMax[3] <- 42 
+bioTransition[3,4] <- .94
+bioTransition [3,10] <- .06
+
+bioMin[6] <- 14           #Transition from exposed and vaccinated to recovery/death
+bioMax[6] <- 42
+bioTransition[6,4] <-.97
+bioTransition[6,10] <- .03
+
+bioMin[5] <- 14           #Transition from 5 to 6/7/8
+bioMax[5] <- 42          
+bioTransition[5,6] <- .03 
+bioTransition[5,7] <- .03
+bioTransition[5,8] <- .94
+
+bioMin[7] <-14          #Transition from 7 to 4/8/10
+bioMax[7] <-42
+bioTransition[7,4] <- .48
+bioTransition[7,8] <- .48
+bioTransition[7,10] <- 04
+
+bioMin[4] <-125
+bioMax[4] <- 365
+bioTransition[4,8] <- .5 #Transition from 4 to 8/1
+bioTransition[4,1] <- .5
+
+
+
+setAgentState<- function(agent, biostate)
+{
+  agent$biostate <- biostate
+  if(sum(bioTransition[biostate,])>0) # this state transitions to something else.
+  {
+    ##which state do we go to?
+     agent$biostatecountdown <- sample(x=seq(bioMin[biostate],bioMax[biostate]),1) #how long will we state in this state?
+     agent$nextbiostate <- sample(1:STATES, prob=bioTransition[agent$biostate,],size=1)
+     
+  } else{
+   agent$biostatecountdown <- NA
+   agent$nextbiostate <- NA   ##just so we can tell if the agent is finished.
+  }
+  return(agent) 
+}
+
+
+transitionAgent<- function(agent)
+{
+   return(setAgentState(agent,agent$nextbiostate))
+}
+
+updateAgent<- function(agent)
+{
+  if(!is.na(agent$biostatecountdown))
+  {
+   agent$biostatecountdown <- agent$biostatecountdown -1
+    if(agent$biostatecountdown <=0)  ##new state
+    {
+       agent <- transitionAgent(agent)
+
+    }
+  }
+   return(agent)
+}
+```
 
 
 
 
-
+```{r, cache=TRUE, fig.width=8, fig.height=8}
+par(xpd=NA,mar=c(5,5,8,5))
+gplot(bioTransition,label=Statelabels)
+```
 
 
