@@ -31,6 +31,7 @@ compliance, and much more. A geographical network is defined, with a social netw
 that governs agent's interaction patterns over the network. 
 
 ## Developing the agent
+
 An agent can have two states: a psychological state, and a biological state.
 Some examples of the biological state include 'Quarantine', social distancing, 
 and believing in a government vaccination directive. Some of these states will
@@ -111,6 +112,9 @@ makeAgent <- function(psychstate, biostate, age_group)
 }
 print(makeAgent(1,2,3))
 ```
+## Biological model timecourse
+
+
 
 
 
