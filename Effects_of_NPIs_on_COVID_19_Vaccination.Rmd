@@ -1,0 +1,119 @@
+---
+title: "Geographic_ABM_on_Impacts_of_NPIs_on_the_Vaccination_Process_In_Kenya"
+author: "Vincent Okoth"
+date: "11/23/2021"
+
+knit: (function(input_file, encoding) {
+  out_dir <- 'D:\GEGIS\Project\R\agent_based_modelling_of_COVID_19_NPIs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Background
+
+The devastating impact of the COVID-19 pandemic on global health and economics 
+has ushered in a period of fast vaccine research, development, manufacturing, and distribution. With several vaccines currently available for use in Kenya, this
+markdown file outlines the details of the Geographic agent-based model on 
+impacts of NPIs (None pharmaceutical interventions) and policy changes on the 
+Vaccination Process In Kenya. The model implements agents that undergo vaccination
+as they progress through various stages of the COVID-19 disease. The agents 
+have various psychological states to allow the exploration of interactions, 
+compliance, and much more. A geographical network is defined, with a social network
+that governs agent's interaction patterns over the network. 
+
+## Developing the agent
+An agent can have two states: a psychological state, and a biological state.
+Some examples of the biological state include 'Quarantine', social distancing, 
+and believing in a government vaccination directive. Some of these states will
+be explored later in the model.
+
+The biological states have several specific cases including:
+
+1. Susceptible
+2. Exposed
+3. Infectious
+4. Recovered
+5. Susceptible and vaccinated
+6. Exposed and vaccinated
+7. Infectious and vaccinated
+8. Post COVID immune
+9. Naturally Immune
+10. Death
+
+Whereas existing SIR models break #3 into 2 to three stages including hospitalization
+and death,including the stages will require that we define more parameters that
+will complicate the model. Initially, the agents could be defined just by their
+biological states, with the assumption that most people are in state 1. Others
+would be in state 8 or 9 already which are more of the same. 
+
+Global variables will be used to define the model, and the states defines as 
+named in the above list.
+
+
+
+```{r, cache=TRUE}
+library(gganimate)
+library(ggplot2)
+library(dplyr)
+library(sna)
+library(knitr)
+library(reshape2)
+library(igraph)
+
+States <<- 10
+
+
+
+Statenames <<- c("Susceptible",
+                 "Exposed",
+                 "Infectious",
+                 "Recovered",
+                 "Susceptible and vaccinated",
+                 "Exposed and vaccinated",
+                 "Infectious and vaccinated",
+                 "Post COVID immune",
+                 "Naturally Immune",
+                 "Death")
+
+
+
+Statelabels <<- c("Susceptible",
+                 "Exposed",
+                 "Infectious",
+                 "Recovered",
+                 "Susceptible \n& vaccinated",
+                 "Exposed \n& vaccinated",
+                 "Infectious \n& vaccinated",
+                 "Post COVID immune",
+                 "Naturally Immune",
+                 "Death")
+
+
+
+age_group <<- c("13 to 75+")
+
+
+
+makeAgent <- function(psychstate, biostate, age_group) 
+{
+  return(list(psychstate = psychstate,
+              biostate = biostate,
+              age_group = age_group))
+}
+print(makeAgent(1,2,3))
+```
+
+
+
+
+
+
